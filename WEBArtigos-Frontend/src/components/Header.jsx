@@ -29,7 +29,7 @@ const Header = () => {
             Novo Artigo
           </Link>
           <Link to="/upload" className="nav-link">
-            Upload PDF
+            Upload PDF/DOCX
           </Link>
         </nav>
 
