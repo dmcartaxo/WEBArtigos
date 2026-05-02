@@ -1,6 +1,8 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using WEBArtigos.Common;
 using WEBArtigos.DTOs;
+using WEBArtigos.Entities;
 using WEBArtigos.Services;
 
 namespace WEBArtigos.Controllers;
@@ -8,6 +10,7 @@ namespace WEBArtigos.Controllers;
 [ApiController]
 [Route("api/v1/[controller]")]
 [Produces("application/json")]
+[Authorize]
 public class ArticlesController(IArticleService service, ILogger<ArticlesController> logger) : ControllerBase
 {
     /// <summary>Lista artigos com paginação, filtros e ordenação.</summary>
@@ -64,9 +67,10 @@ public class ArticlesController(IArticleService service, ILogger<ArticlesControl
             ApiResponse<ArticleResponseDto>.Ok(created));
     }
 
-    /// <summary>Atualiza um artigo existente.</summary>
+    /// <summary>Atualiza um artigo existente. Requer role Admin.</summary>
     /// <param name="id">ID do artigo</param>
     /// <param name="dto">Dados para atualização</param>
+    [Authorize(Roles = UserRoles.Admin)]
     [HttpPut("{id:int}")]
     [ProducesResponseType(typeof(ApiResponse<ArticleResponseDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
@@ -81,8 +85,9 @@ public class ArticlesController(IArticleService service, ILogger<ArticlesControl
         return Ok(ApiResponse<ArticleResponseDto>.Ok(updated));
     }
 
-    /// <summary>Remove um artigo.</summary>
+    /// <summary>Remove um artigo. Requer role Admin.</summary>
     /// <param name="id">ID do artigo</param>
+    [Authorize(Roles = UserRoles.Admin)]
     [HttpDelete("{id:int}")]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
