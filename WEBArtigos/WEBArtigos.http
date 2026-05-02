@@ -1,0 +1,6 @@
+@WEBArtigos_HostAddress = http://localhost:5237
+
+GET {{WEBArtigos_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
