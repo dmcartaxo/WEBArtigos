@@ -1,30 +1,44 @@
+using WEBArtigos.Common;
 using WEBArtigos.DTOs;
 using WEBArtigos.Entities;
 using WEBArtigos.Repositories;
 
 namespace WEBArtigos.Services;
 
-public class ArticleService(IArticleRepository repository) : IArticleService
+public class ArticleService(IArticleRepository repository, ILogger<ArticleService> logger) : IArticleService
 {
-    public async Task<IEnumerable<ArticleResponseDto>> GetAllAsync()
+    public async Task<PagedResult<ArticleResponseDto>> GetPagedAsync(ArticleQueryDto query)
     {
-        var articles = await repository.GetAllAsync();
-        return articles.Select(MapToResponse);
+        // Garante valores seguros mesmo sem validação no DTO de query
+        query.Page = Math.Max(1, query.Page);
+        query.PageSize = Math.Clamp(query.PageSize, 1, 100);
+
+        logger.LogInformation(
+            "Listando artigos — página {Page}, tamanho {PageSize}, sortBy={SortBy}, sortDesc={SortDesc}",
+            query.Page, query.PageSize, query.SortBy, query.SortDesc);
+
+        var (items, totalCount) = await repository.GetPagedAsync(query);
+
+        return new PagedResult<ArticleResponseDto>
+        {
+            Items = items.Select(MapToResponse),
+            TotalCount = totalCount,
+            Page = query.Page,
+            PageSize = query.PageSize
+        };
     }
 
     public async Task<ArticleResponseDto?> GetByIdAsync(int id)
     {
         var article = await repository.GetByIdAsync(id);
-        return article is null ? null : MapToResponse(article);
-    }
 
-    public async Task<IEnumerable<ArticleResponseDto>> SearchAsync(string query)
-    {
-        if (string.IsNullOrWhiteSpace(query))
-            return [];
+        if (article is null)
+        {
+            logger.LogWarning("Artigo {Id} não encontrado", id);
+            return null;
+        }
 
-        var articles = await repository.SearchAsync(query.Trim());
-        return articles.Select(MapToResponse);
+        return MapToResponse(article);
     }
 
     public async Task<ArticleResponseDto> CreateAsync(ArticleCreateDto dto)
@@ -38,28 +52,41 @@ public class ArticleService(IArticleRepository repository) : IArticleService
         };
 
         var created = await repository.CreateAsync(article);
+        logger.LogInformation("Artigo criado: ID={Id}, Título={Title}", created.Id, created.Title);
         return MapToResponse(created);
     }
 
     public async Task<ArticleResponseDto?> UpdateAsync(int id, ArticleUpdateDto dto)
     {
         var article = await repository.GetByIdAsync(id);
-        if (article is null) return null;
+
+        if (article is null)
+        {
+            logger.LogWarning("Tentativa de atualização: artigo {Id} não encontrado", id);
+            return null;
+        }
 
         article.Title = dto.Title.Trim();
         article.Content = dto.Content.Trim();
         article.Author = dto.Author.Trim();
 
         var updated = await repository.UpdateAsync(article);
+        logger.LogInformation("Artigo atualizado: ID={Id}", updated.Id);
         return MapToResponse(updated);
     }
 
     public async Task<bool> DeleteAsync(int id)
     {
         var article = await repository.GetByIdAsync(id);
-        if (article is null) return false;
+
+        if (article is null)
+        {
+            logger.LogWarning("Tentativa de exclusão: artigo {Id} não encontrado", id);
+            return false;
+        }
 
         await repository.DeleteAsync(article);
+        logger.LogInformation("Artigo excluído: ID={Id}", id);
         return true;
     }
 

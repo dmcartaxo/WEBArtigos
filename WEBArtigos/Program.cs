@@ -1,24 +1,49 @@
+using FluentValidation;
+using FluentValidation.AspNetCore;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
 using System.Reflection;
+using WEBArtigos.Common;
 using WEBArtigos.Data;
+using WEBArtigos.Middleware;
 using WEBArtigos.Repositories;
 using WEBArtigos.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Database
+// ── Database ──────────────────────────────────────────────────────────────────
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// DI
+// ── Injeção de dependência ────────────────────────────────────────────────────
 builder.Services.AddScoped<IArticleRepository, ArticleRepository>();
 builder.Services.AddScoped<IArticleService, ArticleService>();
 
-// Controllers com validação automática via DataAnnotations
+// ── FluentValidation ─────────────────────────────────────────────────────────
+// Registra todos os validators do assembly automaticamente
+builder.Services.AddFluentValidationAutoValidation();
+builder.Services.AddValidatorsFromAssemblyContaining<Program>();
+
+// ── Controllers ───────────────────────────────────────────────────────────────
 builder.Services.AddControllers();
 
-// Swagger / OpenAPI
+// Formata erros de validação no padrão ApiResponse
+builder.Services.Configure<ApiBehaviorOptions>(options =>
+{
+    options.InvalidModelStateResponseFactory = context =>
+    {
+        var errors = context.ModelState
+            .Where(x => x.Value?.Errors.Any() == true)
+            .SelectMany(x => x.Value!.Errors)
+            .Select(x => x.ErrorMessage)
+            .ToArray();
+
+        return new BadRequestObjectResult(ApiResponse<object>.Fail(errors));
+    };
+});
+
+// ── Swagger / OpenAPI ─────────────────────────────────────────────────────────
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
@@ -40,7 +65,11 @@ builder.Services.AddSwaggerGen(options =>
         options.IncludeXmlComments(xmlPath);
 });
 
+// ─────────────────────────────────────────────────────────────────────────────
 var app = builder.Build();
+
+// Middleware de tratamento global de exceções (deve ser o primeiro)
+app.UseMiddleware<ExceptionHandlingMiddleware>();
 
 // Aplicar migrations automaticamente na inicialização
 using (var scope = app.Services.CreateScope())
@@ -53,7 +82,7 @@ app.UseSwagger();
 app.UseSwaggerUI(options =>
 {
     options.SwaggerEndpoint("/swagger/v1/swagger.json", "WEBArtigos API v1");
-    options.RoutePrefix = string.Empty; // Swagger na raiz: http://localhost:5000
+    options.RoutePrefix = string.Empty;
 });
 
 app.UseHttpsRedirection();
