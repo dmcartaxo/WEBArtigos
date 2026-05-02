@@ -104,8 +104,8 @@ public class ArticleService(
         var content = await pdfService.ExtractTextAsync(dto.File);
 
         // 3. Gera resumo via IA
-        logger.LogInformation("Gerando resumo para: {Title}", dto.Title.Trim());
-        var summary = await aiService.SummarizeAsync(content);
+        // logger.LogInformation("Gerando resumo para: {Title}", dto.Title.Trim());
+        var summary = ""; //  await aiService.SummarizeAsync(content);
 
         // 4. Persiste o artigo
         var article = new Article
