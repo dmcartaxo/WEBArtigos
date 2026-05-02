@@ -8,7 +8,7 @@ namespace WEBArtigos.Services;
 public class ArticleService(
     IArticleRepository repository,
     IFileService fileService,
-    IPdfService pdfService,
+    IDocumentProcessorService documentProcessor,
     IAiService aiService,
     ILogger<ArticleService> logger) : IArticleService
 {
@@ -100,8 +100,8 @@ public class ArticleService(
         // 1. Valida arquivo (tipo, tamanho, extensão)
         fileService.ValidateFile(dto.File);
 
-        // 2. Extrai texto do PDF
-        var content = await pdfService.ExtractTextAsync(dto.File);
+        // 2. Extrai texto do documento (PDF, DOCX, etc)
+        var content = await documentProcessor.ExtractTextAsync(dto.File);
 
         // 3. Gera resumo via IA
         // logger.LogInformation("Gerando resumo para: {Title}", dto.Title.Trim());

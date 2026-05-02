@@ -3,7 +3,14 @@ namespace WEBArtigos.Services;
 public class FileService(IConfiguration config) : IFileService
 {
     private static readonly string[] AllowedContentTypes =
-        ["application/pdf", "application/x-pdf", "application/octet-stream"];
+        [
+            "application/pdf",
+            "application/x-pdf",
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            "application/octet-stream"
+        ];
+
+    private static readonly string[] AllowedExtensions = [".pdf", ".docx"];
 
     public void ValidateFile(IFormFile file)
     {
@@ -17,12 +24,12 @@ public class FileService(IConfiguration config) : IFileService
             throw new ArgumentException($"O arquivo excede o tamanho máximo permitido de {maxSizeMb} MB.");
 
         var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
-        if (extension != ".pdf")
-            throw new ArgumentException("Apenas arquivos com extensão .pdf são aceitos.");
+        if (!AllowedExtensions.Contains(extension))
+            throw new ArgumentException($"Apenas arquivos com extensões {string.Join(", ", AllowedExtensions)} são aceitos.");
 
         // Valida pelo Content-Type, mas não confia cegamente (pode ser forjado)
-        // A validação real é feita pelo PdfService ao tentar abrir o arquivo
-        if (!AllowedContentTypes.Contains(file.ContentType.ToLowerInvariant()))
-            throw new ArgumentException("O Content-Type do arquivo deve ser application/pdf.");
+        // A validação real é feita pelo extrator apropriado ao tentar abrir o arquivo
+        if (!AllowedContentTypes.Contains(file.ContentType?.ToLowerInvariant() ?? "application/octet-stream"))
+            throw new ArgumentException($"Tipo de arquivo não suportado. Content-Type: {file.ContentType}");
     }
 }

@@ -29,15 +29,16 @@ const UploadPdf = () => {
     if (!formData.title.trim() || !formData.author.trim() || !formData.file) {
       setAlert({
         type: 'error',
-        message: 'Por favor, preencha todos os campos e selecione um PDF',
+        message: 'Por favor, preencha todos os campos e selecione um arquivo',
       });
       return;
     }
 
-    if (formData.file.type !== 'application/pdf') {
+    const allowedTypes = ['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+    if (!allowedTypes.includes(formData.file.type)) {
       setAlert({
         type: 'error',
-        message: 'Por favor, selecione um arquivo PDF válido',
+        message: 'Por favor, selecione um arquivo PDF ou DOCX válido',
       });
       return;
     }
@@ -70,7 +71,7 @@ const UploadPdf = () => {
     } catch (error) {
       setAlert({
         type: 'error',
-        message: error.response?.data?.errors?.[0] || 'Erro ao enviar PDF',
+        message: error.response?.data?.errors?.[0] || 'Erro ao enviar arquivo',
       });
     } finally {
       setLoading(false);
@@ -88,8 +89,8 @@ const UploadPdf = () => {
       )}
 
       <div className="upload-card">
-        <h1>Upload de PDF</h1>
-        <p>Envie um PDF para extrair texto e gerar resumo automático</p>
+        <h1>Upload de Documento</h1>
+        <p>Envie um PDF ou DOCX para extrair texto e gerar resumo automático</p>
 
         <form onSubmit={handleSubmit}>
           <div className="form-group">
@@ -121,27 +122,27 @@ const UploadPdf = () => {
           </div>
 
           <div className="form-group">
-            <label htmlFor="file">Arquivo PDF</label>
+            <label htmlFor="file">Arquivo (PDF ou DOCX)</label>
             <div className="file-input-wrapper">
               <input
                 type="file"
                 id="file"
                 name="file"
-                accept=".pdf"
+                accept=".pdf,.docx"
                 onChange={handleChange}
                 required
                 disabled={loading}
               />
               <span className="file-label">
-                {formData.file ? formData.file.name : 'Selecione um arquivo PDF'}
+                {formData.file ? formData.file.name : 'Selecione um arquivo PDF ou DOCX'}
               </span>
             </div>
-            <small>Máximo 10MB. Apenas arquivos PDF.</small>
+            <small>Máximo 10MB. Aceita PDF e DOCX.</small>
           </div>
 
           <div className="form-actions">
             <button type="submit" disabled={loading}>
-              {loading ? 'Enviando...' : 'Enviar PDF'}
+              {loading ? 'Enviando...' : 'Enviar Documento'}
             </button>
             <button
               type="button"
@@ -157,8 +158,8 @@ const UploadPdf = () => {
         <div className="upload-info">
           <h3>Como funciona?</h3>
           <ol>
-            <li>Envie um arquivo PDF com o artigo</li>
-            <li>O sistema extrai o texto do documento</li>
+            <li>Envie um arquivo PDF ou DOCX com o artigo</li>
+            <li>O sistema extrai o texto do documento automaticamente</li>
             <li>IA gera um resumo automático do conteúdo</li>
             <li>O artigo fica disponível na biblioteca</li>
           </ol>

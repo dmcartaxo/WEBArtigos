@@ -26,7 +26,10 @@ builder.Services.AddScoped<IArticleService, ArticleService>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IFileService, FileService>();
-builder.Services.AddScoped<IPdfService, PdfService>();
+builder.Services.AddScoped<PdfService>();
+builder.Services.AddScoped<DocxService>();
+builder.Services.AddScoped<IPdfService>(sp => sp.GetRequiredService<PdfService>());
+builder.Services.AddScoped<IDocumentProcessorService, DocumentProcessorService>();
 builder.Services.AddScoped<IAiService, AiService>();
 
 // ── HttpClient para Anthropic API ─────────────────────────────────────────────

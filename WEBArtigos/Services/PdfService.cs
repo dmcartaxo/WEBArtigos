@@ -3,7 +3,7 @@ using UglyToad.PdfPig;
 
 namespace WEBArtigos.Services;
 
-public class PdfService(ILogger<PdfService> logger) : IPdfService
+public class PdfService(ILogger<PdfService> logger) : IPdfService, IDocumentTextExtractor
 {
     public async Task<string> ExtractTextAsync(IFormFile file)
     {
