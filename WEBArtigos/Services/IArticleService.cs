@@ -1,13 +1,15 @@
+using WEBArtigos.Common;
 using WEBArtigos.DTOs;
 
 namespace WEBArtigos.Services;
 
 public interface IArticleService
 {
-    Task<IEnumerable<ArticleResponseDto>> GetAllAsync();
+    Task<PagedResult<ArticleResponseDto>> GetPagedAsync(ArticleQueryDto query);
     Task<ArticleResponseDto?> GetByIdAsync(int id);
-    Task<IEnumerable<ArticleResponseDto>> SearchAsync(string query);
     Task<ArticleResponseDto> CreateAsync(ArticleCreateDto dto);
     Task<ArticleResponseDto?> UpdateAsync(int id, ArticleUpdateDto dto);
     Task<bool> DeleteAsync(int id);
+    Task<ArticleResponseDto> UploadAsync(ArticleUploadDto dto);
+    Task<ArticleResponseDto?> ResummarizeAsync(int id);
 }
