@@ -5,7 +5,12 @@ using WEBArtigos.Repositories;
 
 namespace WEBArtigos.Services;
 
-public class ArticleService(IArticleRepository repository, ILogger<ArticleService> logger) : IArticleService
+public class ArticleService(
+    IArticleRepository repository,
+    IFileService fileService,
+    IPdfService pdfService,
+    IAiService aiService,
+    ILogger<ArticleService> logger) : IArticleService
 {
     public async Task<PagedResult<ArticleResponseDto>> GetPagedAsync(ArticleQueryDto query)
     {
@@ -90,12 +95,63 @@ public class ArticleService(IArticleRepository repository, ILogger<ArticleServic
         return true;
     }
 
+    public async Task<ArticleResponseDto> UploadAsync(ArticleUploadDto dto)
+    {
+        // 1. Valida arquivo (tipo, tamanho, extensão)
+        fileService.ValidateFile(dto.File);
+
+        // 2. Extrai texto do PDF
+        var content = await pdfService.ExtractTextAsync(dto.File);
+
+        // 3. Gera resumo via IA
+        logger.LogInformation("Gerando resumo para: {Title}", dto.Title.Trim());
+        var summary = await aiService.SummarizeAsync(content);
+
+        // 4. Persiste o artigo
+        var article = new Article
+        {
+            Title = dto.Title.Trim(),
+            Content = content,
+            Author = dto.Author.Trim(),
+            Summary = summary,
+            OriginalFileName = dto.File.FileName,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        var created = await repository.CreateAsync(article);
+        logger.LogInformation("Artigo criado via upload: ID={Id}, Arquivo={File}", created.Id, dto.File.FileName);
+        return MapToResponse(created);
+    }
+
+    public async Task<ArticleResponseDto?> ResummarizeAsync(int id)
+    {
+        var article = await repository.GetByIdAsync(id);
+
+        if (article is null)
+        {
+            logger.LogWarning("Reprocessamento: artigo {Id} não encontrado", id);
+            return null;
+        }
+
+        if (string.IsNullOrWhiteSpace(article.Content))
+            throw new InvalidOperationException("Artigo não possui conteúdo para gerar resumo.");
+
+        logger.LogInformation("Reprocessando resumo para artigo ID={Id}", id);
+        article.Summary = await aiService.SummarizeAsync(article.Content);
+
+        var updated = await repository.UpdateAsync(article);
+        logger.LogInformation("Resumo reprocessado: ID={Id}", updated.Id);
+        return MapToResponse(updated);
+    }
+
     private static ArticleResponseDto MapToResponse(Article article) => new()
     {
         Id = article.Id,
         Title = article.Title,
         Content = article.Content,
         Author = article.Author,
-        CreatedAt = article.CreatedAt
+        CreatedAt = article.CreatedAt,
+        Summary = article.Summary,
+        OriginalFileName = article.OriginalFileName
     };
 }

@@ -10,4 +10,6 @@ public interface IArticleService
     Task<ArticleResponseDto> CreateAsync(ArticleCreateDto dto);
     Task<ArticleResponseDto?> UpdateAsync(int id, ArticleUpdateDto dto);
     Task<bool> DeleteAsync(int id);
+    Task<ArticleResponseDto> UploadAsync(ArticleUploadDto dto);
+    Task<ArticleResponseDto?> ResummarizeAsync(int id);
 }

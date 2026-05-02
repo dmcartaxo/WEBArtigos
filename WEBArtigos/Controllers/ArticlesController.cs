@@ -100,4 +100,33 @@ public class ArticlesController(IArticleService service, ILogger<ArticlesControl
 
         return Ok(ApiResponse<object>.Ok(new { message = $"Artigo {id} removido com sucesso." }));
     }
+
+    /// <summary>Faz upload de um PDF, extrai o texto e gera resumo via IA.</summary>
+    [HttpPost("upload")]
+    [Consumes("multipart/form-data")]
+    [ProducesResponseType(typeof(ApiResponse<ArticleResponseDto>), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> Upload([FromForm] ArticleUploadDto dto)
+    {
+        var created = await service.UploadAsync(dto);
+        logger.LogInformation("Upload concluído — artigo {Id} criado", created.Id);
+        return CreatedAtAction(nameof(GetById), new { id = created.Id },
+            ApiResponse<ArticleResponseDto>.Ok(created));
+    }
+
+    /// <summary>Reprocessa o resumo de um artigo existente via IA. Requer role Admin.</summary>
+    /// <param name="id">ID do artigo</param>
+    [Authorize(Roles = UserRoles.Admin)]
+    [HttpPost("{id:int}/resummarize")]
+    [ProducesResponseType(typeof(ApiResponse<ArticleResponseDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Resummarize(int id)
+    {
+        var result = await service.ResummarizeAsync(id);
+
+        if (result is null)
+            return NotFound(ApiResponse<object>.Fail($"Artigo com ID {id} não encontrado."));
+
+        return Ok(ApiResponse<ArticleResponseDto>.Ok(result));
+    }
 }

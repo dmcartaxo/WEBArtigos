@@ -25,6 +25,19 @@ builder.Services.AddScoped<IArticleRepository, ArticleRepository>();
 builder.Services.AddScoped<IArticleService, ArticleService>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IFileService, FileService>();
+builder.Services.AddScoped<IPdfService, PdfService>();
+builder.Services.AddScoped<IAiService, AiService>();
+
+// ── HttpClient para Anthropic API ─────────────────────────────────────────────
+builder.Services.AddHttpClient("Anthropic", client =>
+{
+    var apiKey = builder.Configuration["Anthropic:ApiKey"]
+        ?? throw new InvalidOperationException("Anthropic:ApiKey não configurado.");
+    client.DefaultRequestHeaders.Add("x-api-key", apiKey);
+    client.DefaultRequestHeaders.Add("anthropic-version", "2023-06-01");
+    client.Timeout = TimeSpan.FromSeconds(60);
+});
 
 // ── FluentValidation ─────────────────────────────────────────────────────────
 builder.Services.AddFluentValidationAutoValidation();
